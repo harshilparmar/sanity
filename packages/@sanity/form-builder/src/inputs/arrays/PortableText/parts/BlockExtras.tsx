@@ -1,95 +1,108 @@
+// Imported from:
+// part:@sanity/form-builder/input/block-editor/block-extras
+
 import {useZIndex} from '@sanity/base/components'
 import {Layer} from '@sanity/ui'
 import React from 'react'
-import classNames from 'classnames'
 import {ChangeIndicatorWithProvidedFullPath} from '@sanity/base/lib/change-indicators'
-import Markers from 'part:@sanity/form-builder/input/block-editor/block-markers'
 import {isKeySegment, Marker, Path} from '@sanity/types'
 import {
   PortableTextBlock,
   PortableTextEditor,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
+import styled from 'styled-components'
+import {BlockMarkers} from '../../../../legacyImports'
 import {RenderCustomMarkers} from '../types'
-import styles from './BlockExtras.css'
+import {getValidationMarkers} from './helpers'
 
-type Props = {
+interface BlockExtrasProps {
   block: PortableTextBlock
-  blockActions?: Node
+  blockActions?: React.ReactNode
   height: number
   isFullscreen: boolean
   markers: Marker[]
   onFocus: (path: Path) => void
   renderCustomMarkers?: RenderCustomMarkers
 }
-export default function BlockExtras(props: Props) {
+
+const Root = styled(Layer)`
+  width: 100%;
+  box-sizing: border-box;
+`
+
+const Container = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2em;
+  height: 100%;
+  pointer-events: all;
+
+  & > div {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`
+
+const ChangeIndicatorBox = styled.div`
+  position: absolute;
+  top: 0;
+  left: -1px;
+  bottom: 0;
+`
+
+export default function BlockExtras(props: BlockExtrasProps) {
+  const {block, blockActions, height, isFullscreen, markers, onFocus, renderCustomMarkers} = props
   const editor = usePortableTextEditor()
   const zindex = useZIndex()
-  const {block, blockActions, height, isFullscreen, markers, onFocus, renderCustomMarkers} = props
   const blockValidation = getValidationMarkers(markers)
   const errors = blockValidation.filter((mrkr) => mrkr.level === 'error')
   const warnings = blockValidation.filter((mrkr) => mrkr.level === 'warning')
-  const empty = markers.length === 0 && !blockActions
-  const content = (
-    <div className={styles.content} style={{height: `${height}px`}}>
-      {markers.length > 0 && (
-        <div className={styles.markers}>
-          <Markers
-            className={styles.markers}
-            markers={markers}
-            scopedValidation={blockValidation}
-            onFocus={onFocus}
-            renderCustomMarkers={renderCustomMarkers}
-          />
-        </div>
-      )}
-      {blockActions && <div className={styles.blockActions}>{blockActions}</div>}
-      {/* Make sure it gets proper height (has content). Insert an zero-width-space if empty */}
-      {empty && <>&#8203;</>}
-    </div>
-  )
+  // const empty = markers.length === 0 && !blockActions
   const path = PortableTextEditor.getSelection(editor)?.focus.path
   const hasFocus = path && isKeySegment(path[0]) ? path[0]._key === block._key : false
-  const returned =
-    isFullscreen && path && isKeySegment(path[0]) ? (
-      <ChangeIndicatorWithProvidedFullPath
-        className={styles.changeIndicator}
-        compareDeep
-        value={block}
-        hasFocus={hasFocus}
-        path={[{_key: block._key}]}
-      >
-        {content}
-      </ChangeIndicatorWithProvidedFullPath>
-    ) : (
-      content
-    )
+  const renderChangeIndicator = isFullscreen && path && isKeySegment(path[0])
+
   return (
-    <Layer
-      className={classNames([
-        styles.root,
-        hasFocus && styles.hasFocus,
-        isFullscreen && styles.hasFullScreen,
-        errors.length > 0 && styles.withError,
-        warnings.length > 0 && !errors.length && styles.withWarning,
-      ])}
+    <Root
+      data-ui="BlockExtras"
+      // hasFocus && styles.hasFocus,
+      // isFullscreen && styles.hasFullScreen,
+      // errors.length > 0 && styles.withError,
+      // warnings.length > 0 && !errors.length && styles.withWarning,
       zOffset={zindex.portal}
     >
-      {returned}
-    </Layer>
-  )
-}
+      <Container style={{height}}>
+        <div>
+          {markers.length > 0 && (
+            <BlockMarkers
+              markers={markers}
+              scopedValidation={blockValidation}
+              onFocus={onFocus}
+              renderCustomMarkers={renderCustomMarkers}
+            />
+          )}
 
-function getValidationMarkers(markers: Marker[]) {
-  const validation = markers.filter((mrkr) => mrkr.type === 'validation')
-  return validation.map((mrkr) => {
-    if (mrkr.path.length <= 1) {
-      return mrkr
-    }
-    const level = mrkr.level === 'error' ? 'errors' : 'warnings'
-    return {
-      ...mrkr,
-      item: mrkr.item.cloneWithMessage(`Contains ${level}`),
-    }
-  })
+          {blockActions}
+
+          {renderChangeIndicator && (
+            <ChangeIndicatorBox>
+              <ChangeIndicatorWithProvidedFullPath
+                compareDeep
+                value={block}
+                hasFocus={hasFocus}
+                path={[{_key: block._key}]}
+              >
+                <div style={{width: 2, height}} />
+              </ChangeIndicatorWithProvidedFullPath>
+            </ChangeIndicatorBox>
+          )}
+        </div>
+      </Container>
+    </Root>
+  )
 }

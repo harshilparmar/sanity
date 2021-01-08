@@ -13,17 +13,14 @@ import {
 import {rem, Theme} from '@sanity/ui'
 import React from 'react'
 import styled, {css} from 'styled-components'
-import {RenderBlockActions} from './types'
 
 interface EditableProps {
-  hasMarkers: boolean
   hotkeys: HotkeyOptions
   initialSelection?: EditorSelection
   onCopy?: OnCopyFn
   onPaste?: OnPasteFn
   renderAnnotation: RenderAnnotationFunction
   renderBlock: RenderBlockFunction
-  renderBlockActions?: RenderBlockActions
   renderChild: RenderChildFunction
   renderDecorator: RenderDecoratorFunction
   value: PortableTextBlock[] | undefined
@@ -38,11 +35,6 @@ const Root = styled.div(({theme}: {theme: Theme}) => {
     min-height: 100%;
     display: flex;
     flex-direction: column;
-
-    &[data-block-extras] {
-      margin-right: 2em;
-      /* margin-right: var(--block-extras-width); */
-    }
 
     & .pt-editable {
       background-color: ${input.default.enabled.bg};
@@ -115,23 +107,19 @@ const Root = styled.div(({theme}: {theme: Theme}) => {
 
 export function Editable(props: EditableProps) {
   const {
-    hasMarkers,
     hotkeys,
     initialSelection,
     onCopy,
     onPaste,
     renderAnnotation,
     renderBlock,
-    renderBlockActions,
     renderChild,
     renderDecorator,
     value,
   } = props
 
-  const hasBlockExtras = Boolean(renderBlockActions || hasMarkers)
-
   return (
-    <Root data-block-extras={hasBlockExtras ? '' : undefined}>
+    <Root>
       <PortableTextEditable
         hotkeys={hotkeys}
         onCopy={onCopy}

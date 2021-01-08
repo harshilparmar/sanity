@@ -1,27 +1,33 @@
-import React, {SyntheticEvent, useCallback, useMemo} from 'react'
-import classNames from 'classnames'
-import {
-  PortableTextChild,
-  // Type,
-  RenderAttributes,
-} from '@sanity/portable-text-editor'
-
-import {FOCUS_TERMINATOR} from '@sanity/util/paths'
+import {PortableTextChild, RenderAttributes} from '@sanity/portable-text-editor'
 import {Path, Marker, isValidationErrorMarker} from '@sanity/types'
-// import {PatchEvent} from '../../../../PatchEvent'
+import {FOCUS_TERMINATOR} from '@sanity/util/paths'
+import {Card} from '@sanity/ui'
+import React, {SyntheticEvent, useCallback, useMemo} from 'react'
+import styled from 'styled-components'
 
-import styles from './Annotation.css'
-
-type Props = {
+interface AnnotationProps {
   value: PortableTextChild
-  // type: Type
   children: JSX.Element
   attributes: RenderAttributes
-  // readOnly: boolean
   markers: Marker[]
   onFocus: (path: Path) => void
-  // onChange: (patchEvent: PatchEvent, path: Path) => void
 }
+
+const Root = styled(Card).attrs({forwardedAs: 'span'})`
+  text-decoration: none;
+  display: inline;
+  position: relative;
+
+  &[data-focused='true'] {
+    /* @todo */
+    border: 1px solid #00f;
+  }
+
+  &[data-seleced='true'] {
+    /* @todo */
+    border: 1px solid #000;
+  }
+`
 
 export function Annotation({
   children,
@@ -29,15 +35,8 @@ export function Annotation({
   attributes: {focused, selected, path},
   value,
   onFocus,
-}: Props) {
+}: AnnotationProps) {
   const errors = markers.filter(isValidationErrorMarker)
-
-  const classnames = classNames(
-    styles.root,
-    focused && styles.focused,
-    selected && styles.selected,
-    errors.length > 0 ? styles.error : styles.valid
-  )
 
   const markDefPath = useMemo(() => [...path.slice(0, 1), 'markDefs', {_key: value._key}], [
     path,
@@ -54,8 +53,13 @@ export function Annotation({
   )
 
   return (
-    <span className={classnames} onClick={handleOpen}>
+    <Root
+      data-focused={focused}
+      data-selected={selected}
+      onClick={handleOpen}
+      tone={errors.length > 0 ? 'critical' : 'transparent'}
+    >
       {children}
-    </span>
+    </Root>
   )
 }

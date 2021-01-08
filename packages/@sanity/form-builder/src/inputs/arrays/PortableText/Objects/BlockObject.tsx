@@ -1,27 +1,49 @@
-import React, {useCallback, useMemo} from 'react'
-import classNames from 'classnames'
-import {Path, Marker, isValidationErrorMarker} from '@sanity/types'
+import {
+  EditIcon,
+  LinkIcon,
+  TrashIcon,
+  EyeOpenIcon,
+  // ChevronDownIcon,
+  EllipsisVerticalIcon,
+} from '@sanity/icons'
 import {
   PortableTextEditor,
   PortableTextBlock,
   Type,
   RenderAttributes,
 } from '@sanity/portable-text-editor'
+import {Path, Marker, isValidationErrorMarker} from '@sanity/types'
+import {Box, Button, Card, Code, Flex, Menu, MenuButton, MenuItem} from '@sanity/ui'
 import {FOCUS_TERMINATOR} from '@sanity/util/paths'
-// import {PatchEvent} from '../../../../PatchEvent'
-import {BlockObjectPreview} from './BlockObjectPreview'
-import styles from './BlockObject.css'
+import React, {useCallback} from 'react'
+import styled from 'styled-components'
+import Preview from '../../../../Preview'
+import {IntentMenuItem} from '../../../../transitional/IntentMenuItem'
 
-type Props = {
+interface BlockObjectProps {
   attributes: RenderAttributes
   editor: PortableTextEditor
   markers: Marker[]
-  // onChange: (patchEvent: PatchEvent, path: Path) => void
   onFocus: (path: Path) => void
   readOnly: boolean
   type: Type
   value: PortableTextBlock
 }
+
+const Root = styled(Card)`
+  cursor: move;
+  position: relative;
+
+  &[data-selected='true'] {
+    /* @todo */
+    outline: 2px solid black;
+  }
+
+  &[data-focused='true'] {
+    /* @todo */
+    outline: 2px solid blue;
+  }
+`
 
 export function BlockObject({
   attributes: {focused, selected, path},
@@ -31,16 +53,10 @@ export function BlockObject({
   readOnly,
   type,
   value,
-}: Props) {
+}: BlockObjectProps) {
   const errors = markers.filter(isValidationErrorMarker)
-  const classnames = classNames([
-    styles.root,
-    focused && styles.focused,
-    selected && styles.selected,
-    errors.length > 0 && styles.hasErrors,
-  ])
 
-  const handleClickToOpen = useCallback(
+  const handleDoubleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       if (focused) {
         event.preventDefault()
@@ -53,9 +69,14 @@ export function BlockObject({
     [focused, onFocus, path]
   )
 
-  const handleEdit = useCallback(() => {
-    onFocus(path.concat(FOCUS_TERMINATOR))
-  }, [onFocus, path])
+  const handleEditClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      onFocus(path.concat(FOCUS_TERMINATOR))
+    },
+    [onFocus, path]
+  )
 
   const handleDelete = useCallback(() => {
     PortableTextEditor.delete(
@@ -63,36 +84,59 @@ export function BlockObject({
       {focus: {path, offset: 0}, anchor: {path, offset: 0}},
       {mode: 'block'}
     )
+
     PortableTextEditor.focus(editor)
   }, [editor, path])
 
-  const blockPreview = useMemo(() => {
-    return (
-      <BlockObjectPreview
-        type={type}
-        value={value}
-        // path={path}
-        readOnly={readOnly}
-        // onFocus={onFocus}
-        onClickingDelete={handleDelete}
-        onClickingEdit={handleEdit}
-      />
-    )
-  }, [
-    handleDelete,
-    handleEdit,
-    // onFocus,
-    // path,
-    readOnly,
-    type,
-    value,
-  ])
-
   return (
-    <div className={classnames} onDoubleClick={handleClickToOpen}>
-      <div className={styles.previewContainer} style={readOnly ? {cursor: 'default'} : {}}>
-        {blockPreview}
-      </div>
-    </div>
+    <Root
+      data-focused={focused}
+      data-selected={selected}
+      onDoubleClick={handleDoubleClick}
+      radius={2}
+      shadow={1}
+      style={readOnly ? {cursor: 'default'} : {}}
+      tone={errors.length > 0 ? 'critical' : undefined}
+    >
+      <Flex>
+        <Box flex={1}>
+          <Preview type={type} value={value} layout="block" />
+        </Box>
+        <Box padding={1}>
+          <MenuButton
+            button={
+              <Button
+                aria-label={type ? type.title || type.name : 'Unknown'}
+                icon={EllipsisVerticalIcon}
+                // iconRight={ChevronDownIcon}
+                mode="bleed"
+                paddingX={2}
+                // text={type ? type.title || type.name : 'Unknown'}
+              />
+            }
+            id="todo"
+            menu={
+              <Menu>
+                {value._ref && (
+                  <IntentMenuItem
+                    icon={LinkIcon}
+                    intent="edit"
+                    params={{id: value._ref}}
+                    text="Open document"
+                  />
+                )}
+                {readOnly && <MenuItem icon={EyeOpenIcon} onClick={handleEditClick} text="View" />}
+                {!readOnly && <MenuItem icon={EditIcon} onClick={handleEditClick} text="Edit" />}
+                {!readOnly && (
+                  <MenuItem icon={TrashIcon} onClick={handleDelete} text="Delete" tone="critical" />
+                )}
+              </Menu>
+            }
+            placement="bottom-end"
+            // portal
+          />
+        </Box>
+      </Flex>
+    </Root>
   )
 }

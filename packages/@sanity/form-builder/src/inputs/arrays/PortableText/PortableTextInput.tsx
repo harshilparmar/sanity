@@ -1,6 +1,3 @@
-import {uniqueId} from 'lodash'
-import React, {useEffect, useState, useMemo, useCallback} from 'react'
-import {Marker, Path} from '@sanity/types'
 import {FormFieldPresence} from '@sanity/base/presence'
 import {
   EditorChange,
@@ -12,8 +9,12 @@ import {
   Type,
   HotkeyOptions,
 } from '@sanity/portable-text-editor'
+import {Marker, Path} from '@sanity/types'
+import {Button, useToast} from '@sanity/ui'
+import {uniqueId} from 'lodash'
+import React, {useEffect, useState, useMemo, useCallback} from 'react'
 import {Subject} from 'rxjs'
-import {useToast} from '@sanity/ui'
+import styled from 'styled-components'
 import PatchEvent from '../../../PatchEvent'
 import withPatchSubscriber from '../../../utils/withPatchSubscriber'
 import {FormField} from '../../../components/FormField'
@@ -21,8 +22,6 @@ import type {Patch} from '../../../patch/types'
 import {RenderBlockActions, RenderCustomMarkers} from './types'
 import {PTInput} from './Input'
 import {InvalidValue} from './InvalidValue'
-
-import styles from './PortableTextInput.css'
 
 export type PatchWithOrigin = Patch & {
   origin: 'local' | 'remote' | 'internal'
@@ -37,14 +36,14 @@ type PatchSubscriber = ({
   snapshot: PortableTextBlock[] | undefined
 }) => void
 
-type Props = {
+interface PortableTextInputProps {
   focusPath: Path
   hotkeys: HotkeyOptions
-  level: number
+  // level: number
   markers: Marker[]
-  onBlur: () => void
+  // onBlur: () => void
   onChange: (event: PatchEvent) => void
-  onFocus: (path) => void
+  onFocus: (path: Path) => void
   onCopy?: OnCopyFn
   onPaste?: OnPasteFn
   readOnly: boolean | null
@@ -56,8 +55,20 @@ type Props = {
   value: PortableTextBlock[] | undefined
 }
 
-const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
-  props: Omit<Props, 'level'>,
+const SkipToEditorButton = styled(Button)`
+  &:not(:focus) {
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+  }
+
+  position: absolute;
+  z-index: 20;
+`
+
+const PortableTextInput = React.forwardRef(function PortableTextInput(
+  props: PortableTextInputProps,
   ref: React.RefObject<PortableTextEditor>
 ) {
   const {
@@ -115,6 +126,8 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
 
   const handleEditorChange = useCallback(
     (change: EditorChange) => {
+      // console.log('PTE.handleEditorChange', change)
+
       switch (change.type) {
         case 'mutation':
           // Don't wait for the result
@@ -148,6 +161,7 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
   )
 
   const handleIgnoreValidation = useCallback(() => {
+    // console.log('PTE.handleIgnoreValidation')
     setIgnoreValidationError(true)
   }, [])
 
@@ -158,6 +172,7 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
   }, [ref])
 
   const handleToggleFullscreen = useCallback(() => {
+    // console.log('PTE.handleToggleFullscreen')
     setIsFullscreen((flag) => !flag)
   }, [])
 
@@ -179,6 +194,15 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
       setInvalidValue(null)
     }
   }, [invalidValue, value])
+
+  const handleFocus = useCallback(
+    (nextPath: Path) => {
+      // console.log('PTE.handleFocus', nextPath)
+      // console.log('PortableTextInput.onFocus', nextPath)
+      onFocus(nextPath)
+    },
+    [onFocus]
+  )
 
   return (
     <>
@@ -204,14 +228,7 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
           value={valueTouchedByMarkers}
         >
           {!readOnly && (
-            <button
-              type="button"
-              tabIndex={0}
-              className={styles.focusSkipper}
-              onClick={handleFocusSkipper}
-            >
-              Jump to editor
-            </button>
+            <SkipToEditorButton mode="bleed" onClick={handleFocusSkipper} text="Jump to editor" />
           )}
 
           <PTInput
@@ -225,7 +242,7 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
             // onBlur={onBlur}
             onChange={onChange}
             onCopy={onCopy}
-            onFocus={onFocus}
+            onFocus={handleFocus}
             onPaste={onPaste}
             onToggleFullscreen={handleToggleFullscreen}
             patche$={patche$}
@@ -242,35 +259,39 @@ const PortableTextInputWithRef = React.forwardRef(function PortableTextInput(
   )
 })
 
-export default withPatchSubscriber(
-  class PortableTextInputWithFocusAndBlur extends React.Component<
-    Props & {children: React.ReactNode}
-  > {
-    editorRef: React.RefObject<PortableTextEditor> = React.createRef()
-    focus() {
-      if (this.editorRef.current) {
-        PortableTextEditor.focus(this.editorRef.current)
-      }
-    }
-    blur() {
-      if (this.editorRef.current) {
-        PortableTextEditor.blur(this.editorRef.current)
-      }
-    }
-    render() {
-      const {type, level, markers, presence} = this.props
-      return (
-        <FormField
-          description={type.description}
-          title={type.title}
-          level={level}
-          markers={markers}
-          presence={presence}
-          changeIndicator={false}
-        >
-          <PortableTextInputWithRef {...this.props} ref={this.editorRef} />
-        </FormField>
-      )
+class PortableTextInputWithFocusAndBlur extends React.Component<
+  PortableTextInputProps & {level: number}
+> {
+  editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+
+  focus() {
+    if (this.editorRef.current) {
+      PortableTextEditor.focus(this.editorRef.current)
     }
   }
-)
+
+  blur() {
+    if (this.editorRef.current) {
+      PortableTextEditor.blur(this.editorRef.current)
+    }
+  }
+
+  render() {
+    const {type, level, markers, presence} = this.props
+
+    return (
+      <FormField
+        description={type.description}
+        title={type.title}
+        level={level}
+        markers={markers}
+        presence={presence}
+        changeIndicator={false}
+      >
+        <PortableTextInput {...this.props} ref={this.editorRef} />
+      </FormField>
+    )
+  }
+}
+
+export default withPatchSubscriber(PortableTextInputWithFocusAndBlur)

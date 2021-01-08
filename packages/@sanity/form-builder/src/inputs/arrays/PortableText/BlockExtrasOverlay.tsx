@@ -1,19 +1,18 @@
-import React from 'react'
-import BlockExtras from 'part:@sanity/form-builder/input/block-editor/block-extras'
-import {isKeySegment, Marker, Path} from '@sanity/types'
 import {
   PortableTextBlock,
   PortableTextEditor,
   PortableTextFeatures,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
+import {isKeySegment, Marker, Path} from '@sanity/types'
+import React from 'react'
+import styled from 'styled-components'
+import {BlockExtras} from '../../../legacyImports'
 import PatchEvent from '../../../../PatchEvent'
 import createBlockActionPatchFn from './utils/createBlockActionPatchFn'
 import {RenderBlockActions, RenderCustomMarkers} from './types'
 
-import styles from './BlockExtrasOverlay.css'
-
-type Props = {
+interface BlockExtrasOverlayProps {
   isFullscreen: boolean
   markers: Marker[]
   onFocus: (path: Path) => void
@@ -23,31 +22,47 @@ type Props = {
   value: PortableTextBlock[] | undefined
 }
 
-const findBlockMarkers = (block: PortableTextBlock, markers: Marker[]): Marker[] =>
-  markers.filter((marker) => isKeySegment(marker.path[0]) && marker.path[0]._key === block._key)
+const Root = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+`
 
-export default function BlockExtrasOverlay(props: Props) {
-  const {value} = props
+const BlockBox = styled.div`
+  position: absolute;
+  width: 100%;
+`
 
-  const editor = usePortableTextEditor()
-  const ptFeatures = PortableTextEditor.getPortableTextFeatures(editor)
-
-  // Render overlay for each block
-  return (
-    <div className={styles.root}>
-      {(value || []).map((blk) => (
-        <BlockExtrasWithBlockActionsAndHeight
-          {...props}
-          block={blk}
-          ptFeatures={ptFeatures}
-          key={`blockExtras-${blk._key}`}
-        />
-      ))}
-    </div>
+const findBlockMarkers = (block: PortableTextBlock, markers: Marker[]): Marker[] => {
+  return markers.filter(
+    (marker) => isKeySegment(marker.path[0]) && marker.path[0]._key === block._key
   )
 }
 
-type BlockExtrasWithBlockActionsAndHeightProps = {
+export function BlockExtrasOverlay(props: BlockExtrasOverlayProps) {
+  const {value} = props
+  const editor = usePortableTextEditor()
+  const ptFeatures = PortableTextEditor.getPortableTextFeatures(editor)
+  const blocks = value || []
+
+  // Render overlay for each block
+  return (
+    <Root>
+      {blocks.map((block) => (
+        <BlockExtrasWithBlockActionsAndHeight
+          {...props}
+          block={block}
+          ptFeatures={ptFeatures}
+          key={`blockExtras-${block._key}`}
+        />
+      ))}
+    </Root>
+  )
+}
+
+interface BlockExtrasWithBlockActionsAndHeightProps {
   block: PortableTextBlock
   isFullscreen: boolean
   markers: Marker[]
@@ -59,9 +74,7 @@ type BlockExtrasWithBlockActionsAndHeightProps = {
   value: PortableTextBlock[] | undefined
 }
 
-function BlockExtrasWithBlockActionsAndHeight(
-  props: BlockExtrasWithBlockActionsAndHeightProps
-): JSX.Element {
+function BlockExtrasWithBlockActionsAndHeight(props: BlockExtrasWithBlockActionsAndHeightProps) {
   const {
     block,
     isFullscreen,
@@ -76,13 +89,18 @@ function BlockExtrasWithBlockActionsAndHeight(
   const editor = usePortableTextEditor()
   const blockMarkers = findBlockMarkers(block, markers)
   const element = PortableTextEditor.findDOMNode(editor, block) as HTMLElement
+
   if (!element) {
     return null
   }
+
   const rect = element.getBoundingClientRect()
+
   let actions = null
+
   if (renderBlockActions) {
     const RenderComponent = renderBlockActions
+
     if (block) {
       actions = (
         <RenderComponent
@@ -95,14 +113,12 @@ function BlockExtrasWithBlockActionsAndHeight(
       )
     }
   }
+
   const top = element.scrollTop + element.offsetTop
   const height = rect.height
+
   return (
-    <div
-      key={`blockExtras-${block._key}`}
-      className={styles.block}
-      style={{height: `${height}px`, top: `${top}px`}}
-    >
+    <BlockBox key={`blockExtras-${block._key}`} style={{height: `${height}px`, top: `${top}px`}}>
       <BlockExtras
         block={block}
         height={height}
@@ -113,6 +129,6 @@ function BlockExtrasWithBlockActionsAndHeight(
         renderCustomMarkers={renderCustomMarkers}
         value={value}
       />
-    </div>
+    </BlockBox>
   )
 }

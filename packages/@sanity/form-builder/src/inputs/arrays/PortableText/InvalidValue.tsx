@@ -3,9 +3,7 @@ import {Button} from '@sanity/ui'
 import React from 'react'
 import Warning from '../../Warning'
 
-import styles from '../../ObjectInput/styles/UnknownFields.css'
-
-type InvalidValueProps = {
+interface InvalidValueProps {
   resolution: InvalidValueResolution
   value: PortableTextBlock[]
   onChange: (...args: any[]) => any
@@ -20,20 +18,22 @@ export class InvalidValue extends React.PureComponent<InvalidValueProps> {
       this.props.onChange({type: 'mutation', patches})
     }
   }
+
   handleIgnore = (): void => {
     this.props.onIgnore()
   }
+
   render() {
     const {resolution} = this.props
     const message = (
       <>
         <p>{resolution.description}</p>
         <p>
-          <pre className={styles.inspectValue}>{JSON.stringify(resolution.item, null, 2)}</pre>
+          <pre>{JSON.stringify(resolution.item, null, 2)}</pre>
         </p>
         {resolution.action && (
           <>
-            <div className={styles.buttonWrapper}>
+            <div>
               <Button tone="primary" onClick={this.handleAction} text={resolution.action} />
               <Button mode="ghost" onClick={this.handleIgnore} text="Ignore" />
             </div>
@@ -45,6 +45,7 @@ export class InvalidValue extends React.PureComponent<InvalidValueProps> {
         )}
       </>
     )
+
     return <Warning heading="Invalid portable text value" message={message} />
   }
 }

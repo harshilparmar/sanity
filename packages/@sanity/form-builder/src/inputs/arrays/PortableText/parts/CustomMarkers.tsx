@@ -1,3 +1,6 @@
+// Imported from:
+// part:@sanity/form-builder/input/block-editor/block-markers-custom-default
+
 import React from 'react'
 import {CommentIcon} from '@sanity/icons'
 import {Box, Text, Tooltip} from '@sanity/ui'

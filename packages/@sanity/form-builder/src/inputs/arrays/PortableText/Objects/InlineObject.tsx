@@ -1,40 +1,56 @@
-import React, {FunctionComponent, useCallback} from 'react'
-import {isEqual} from 'lodash'
-import classNames from 'classnames'
 import {PortableTextChild, Type, RenderAttributes} from '@sanity/portable-text-editor'
 import {Path, Marker, isValidationErrorMarker} from '@sanity/types'
-
+import {Card} from '@sanity/ui'
 import {FOCUS_TERMINATOR} from '@sanity/util/paths'
+import {isEqual} from 'lodash'
+import React, {useCallback} from 'react'
+import styled from 'styled-components'
 import Preview from '../../../../Preview'
-import {PatchEvent} from '../../../../PatchEvent'
+// import {PatchEvent} from '../../../../PatchEvent'
 
-import styles from './InlineObject.css'
-
-type Props = {
+interface InlineObjectProps {
   value: PortableTextChild
   type: Type
   attributes: RenderAttributes
   readOnly: boolean
   markers: Marker[]
   onFocus: (path: Path) => void
-  onChange: (patchEvent: PatchEvent, path: Path) => void
+  // onChange: (patchEvent: PatchEvent, path: Path) => void
 }
 
-export const InlineObject: FunctionComponent<Props> = ({
+const Root = styled(Card)`
+  &:not([hidden]) {
+    display: inline-flex;
+  }
+  position: relative;
+  min-width: 11px;
+  max-width: 120px;
+
+  &[data-errors='true'] {
+    /* @todo */
+    outline: 2px solid #f00;
+  }
+
+  &[data-selected='true'] {
+    /* @todo */
+    outline: 2px solid #000;
+  }
+
+  &[data-focused='true'] {
+    /* @todo */
+    outline: 2px solid #00f;
+  }
+`
+
+export function InlineObject({
   value,
   type,
   markers,
   attributes: {focused, selected, path},
   onFocus,
   readOnly,
-}) => {
+}: InlineObjectProps) {
   const errors = markers.filter(isValidationErrorMarker)
-  const classnames = classNames([
-    styles.root,
-    focused && styles.focused,
-    selected && styles.selected,
-    errors.length > 0 && styles.hasErrors,
-  ])
 
   const handleOpen = useCallback(() => {
     if (focused) {
@@ -45,15 +61,15 @@ export const InlineObject: FunctionComponent<Props> = ({
   const isEmpty = !value || isEqual(Object.keys(value), ['_key', '_type'])
 
   return (
-    <span className={classnames} onClick={handleOpen}>
-      <span
-        className={styles.previewContainer}
-        // TODO: Probably move to styles aka. className?
-        style={readOnly ? {cursor: 'default'} : {}}
-      >
-        {!isEmpty && <Preview type={type} value={value} layout="inline" />}
-        {isEmpty && !readOnly && <span>Click to edit</span>}
-      </span>
-    </span>
+    <Root
+      border
+      data-focused={focused}
+      data-selected={selected}
+      onClick={handleOpen}
+      tone={errors.length > 0 ? 'critical' : undefined}
+    >
+      {!isEmpty && <Preview type={type} value={value} layout="inline" />}
+      {isEmpty && !readOnly && <span>Click to edit</span>}
+    </Root>
   )
 }

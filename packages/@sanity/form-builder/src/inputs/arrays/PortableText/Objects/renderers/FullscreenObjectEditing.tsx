@@ -1,7 +1,7 @@
 import {PortableTextBlock, Type, PortableTextChild} from '@sanity/portable-text-editor'
 import {FormFieldPresence, PresenceOverlay} from '@sanity/base/presence'
 import {Path, Marker, SchemaType} from '@sanity/types'
-import FullscreenDialog from 'part:@sanity/components/dialogs/fullscreen'
+import {Dialog} from '@sanity/ui'
 import React, {useCallback} from 'react'
 import {FormBuilderInput} from '../../../../../FormBuilderInput'
 import {PatchEvent} from '../../../../../PatchEvent'
@@ -12,7 +12,7 @@ interface FullscreenObjectEditingProps {
   object: PortableTextBlock | PortableTextChild
   onBlur: () => void
   onChange: (patchEvent: PatchEvent, path: Path) => void
-  onClose: (event: React.SyntheticEvent) => void
+  onClose: () => void
   onFocus: (path: Path) => void
   path: Path
   presence: FormFieldPresence[]
@@ -38,10 +38,14 @@ export function FullscreenObjectEditing({
     path,
   ])
 
-  const handleEscape = useCallback((event: React.SyntheticEvent): void => onClose(event), [onClose])
-
   return (
-    <FullscreenDialog isOpen onClose={onClose} onEscape={handleEscape} title={type.title}>
+    <Dialog
+      // @todo
+      id="todo"
+      onClose={onClose}
+      header={type.title}
+      width="auto"
+    >
       {/* @todo: styling */}
       {/* <div className={styles.formBuilderInputWrapper}> */}
 
@@ -60,6 +64,6 @@ export function FullscreenObjectEditing({
           value={object}
         />
       </PresenceOverlay>
-    </FullscreenDialog>
+    </Dialog>
   )
 }

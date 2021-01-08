@@ -2,7 +2,7 @@ import React from 'react'
 import {Button} from '@sanity/ui'
 import Details from '../common/Details'
 import PatchEvent, {unset} from '../../PatchEvent'
-import {ActivateOnFocus} from '../../transitional/ActivateOnFocus'
+import {ActivateOnFocus} from '../../components/ActivateOnFocus'
 import styles from './styles/UnknownFields.css'
 
 type Props = {
@@ -35,11 +35,13 @@ export default class UnknownFields extends React.PureComponent<Props, {}> {
             return (
               <div key={fieldName}>
                 <h4>{fieldName}</h4>
+
                 <ActivateOnFocus>
                   <pre className={styles.inspectValue}>
                     {JSON.stringify(value[fieldName], null, 2)}
                   </pre>
                 </ActivateOnFocus>
+
                 {readOnly ? (
                   <div>
                     This value is <em>read only</em> according to its enclosing schema type and

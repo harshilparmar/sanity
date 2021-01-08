@@ -14,21 +14,18 @@ import {
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
 import {Marker} from '@sanity/types'
-import {Box, Card, Flex, Layer, Theme, useLayer} from '@sanity/ui'
+import {Box, Card, Container, Flex, Layer, Theme, ThemeColorProvider, useLayer} from '@sanity/ui'
 // import {FOCUS_TERMINATOR} from '@sanity/util/paths'
-import classNames from 'classnames'
-import {ScrollContainer} from 'part:@sanity/components/scroll'
 import React, {useMemo, useEffect} from 'react'
 import styled, {css} from 'styled-components'
 import PatchEvent from '../../../PatchEvent'
+import {ScrollContainer} from '../../../transitional/ScrollContainer'
 import {Toolbar} from './Toolbar/Toolbar'
 import {ExpandCollapseButton} from './expandCollapseButton'
-import BlockExtrasOverlay from './BlockExtrasOverlay'
+import {BlockExtrasOverlay} from './BlockExtrasOverlay'
 import {Editable} from './Editable'
 import {RenderBlockActions, RenderCustomMarkers} from './types'
 import {Decorator} from './Text/Decorator'
-
-import styles from './Editor.css'
 
 type Props = {
   initialSelection?: EditorSelection
@@ -109,12 +106,23 @@ const Header = styled(Flex)(({theme}: {theme: Theme}) => {
   `
 })
 
-const Content = styled(Box)`
+const Content = styled(Card)`
   height: 15rem;
   position: relative;
+
+  [data-fullscreen] & {
+    min-height: 0;
+    flex: 1;
+    height: 100%;
+  }
 `
 
-const renderDecorator: RenderDecoratorFunction = (mark, mType, attributes, defaultRender) => {
+const EditableContainer = styled(Container)`
+  position: relative;
+  height: 100%;
+`
+
+const renderDecorator: RenderDecoratorFunction = (mark, markerType, attributes, defaultRender) => {
   return <Decorator mark={mark}>{defaultRender()}</Decorator>
 }
 
@@ -180,7 +188,7 @@ export function PortableTextSanityEditor(props: Props) {
     () => ({
       custom: {
         'mod+enter': onToggleFullscreen,
-        // TODO: disabled for now, enable when we agree on the hotkey
+        // @todo: disabled for now, enable when we agree on the hotkey
         // 'mod+o': handleOpenObjectHotkey,
         ...(hotkeysProp || {}).custom,
       },
@@ -209,12 +217,7 @@ export function PortableTextSanityEditor(props: Props) {
   })
 
   const marksFromProps: HotkeyOptions = useMemo(
-    () => ({
-      marks: {
-        ...defaultHotkeys.marks,
-        ...(hotkeysProp || {}).marks,
-      },
-    }),
+    () => ({marks: {...defaultHotkeys.marks, ...(hotkeysProp || {}).marks}}),
     [defaultHotkeys.marks, hotkeysProp]
   )
 
@@ -224,12 +227,6 @@ export function PortableTextSanityEditor(props: Props) {
       ...customFromProps,
     }),
     [customFromProps, marksFromProps]
-  )
-
-  const hasMarkers = markers.length > 0
-  const scClassName = classNames(
-    styles.scrollContainer,
-    renderBlockActions || hasMarkers ? styles.hasBlockExtras : styles.hasNoBlockExtras
   )
 
   useEffect(() => {
@@ -253,7 +250,6 @@ export function PortableTextSanityEditor(props: Props) {
   return (
     <Root
       border={!isFullscreen}
-      className={classNames(styles.root, isFullscreen && styles.isFullscreen)}
       data-focused={hasFocus ? '' : undefined}
       data-fullscreen={isFullscreen ? '' : undefined}
       data-read-only={readOnly ? '' : undefined}
@@ -281,34 +277,33 @@ export function PortableTextSanityEditor(props: Props) {
         </Header>
       </Layer>
 
-      <Content flex={isFullscreen ? 1 : undefined} height={isFullscreen ? 'fill' : undefined}>
-        <ScrollContainer className={scClassName} ref={setScrollContainerElement}>
-          <div className={styles.editorWrapper}>
-            <div className={styles.blockExtras}>
-              <BlockExtrasOverlay
-                isFullscreen={isFullscreen}
-                markers={markers}
-                onFocus={onFocus}
-                onChange={onFormBuilderChange}
-                renderBlockActions={readOnly ? undefined : renderBlockActions}
-                renderCustomMarkers={renderCustomMarkers}
-                value={value}
-              />
-            </div>
-
-            <Editable
-              hasMarkers={hasMarkers}
-              hotkeys={hotkeys}
-              initialSelection={initialSelection}
-              onCopy={onCopy}
-              onPaste={onPaste}
-              renderAnnotation={renderAnnotation}
-              renderBlock={renderBlock}
-              renderChild={renderChild}
-              renderDecorator={renderDecorator}
+      <Content tone="transparent">
+        <ScrollContainer ref={setScrollContainerElement} style={{height: '100%', overflow: 'auto'}}>
+          <EditableContainer sizing="border" style={{paddingRight: '2rem'}} width={1}>
+            <BlockExtrasOverlay
+              isFullscreen={isFullscreen}
+              markers={markers}
+              onFocus={onFocus}
+              onChange={onFormBuilderChange}
+              renderBlockActions={readOnly ? undefined : renderBlockActions}
+              renderCustomMarkers={renderCustomMarkers}
               value={value}
             />
-          </div>
+
+            <ThemeColorProvider tone="default">
+              <Editable
+                hotkeys={hotkeys}
+                initialSelection={initialSelection}
+                onCopy={onCopy}
+                onPaste={onPaste}
+                renderAnnotation={renderAnnotation}
+                renderBlock={renderBlock}
+                renderChild={renderChild}
+                renderDecorator={renderDecorator}
+                value={value}
+              />
+            </ThemeColorProvider>
+          </EditableContainer>
         </ScrollContainer>
 
         <div data-portal="" ref={setPortalElement} />

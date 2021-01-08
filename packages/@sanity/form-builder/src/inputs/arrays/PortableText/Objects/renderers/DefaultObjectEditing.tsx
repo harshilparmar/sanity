@@ -1,8 +1,8 @@
-import React, {useCallback} from 'react'
-import {Path, Marker, SchemaType} from '@sanity/types'
 import {FormFieldPresence, PresenceOverlay} from '@sanity/base/presence'
 import {PortableTextBlock, Type, PortableTextChild} from '@sanity/portable-text-editor'
-import DefaultDialog from 'part:@sanity/components/dialogs/default'
+import {Path, Marker, SchemaType} from '@sanity/types'
+import {Dialog} from '@sanity/ui'
+import React, {useCallback} from 'react'
 import {FormBuilderInput} from '../../../../../FormBuilderInput'
 import {PatchEvent} from '../../../../../PatchEvent'
 
@@ -12,7 +12,7 @@ interface DefaultObjectEditingProps {
   object: PortableTextBlock | PortableTextChild
   onBlur: () => void
   onChange: (patchEvent: PatchEvent, path: Path) => void
-  onClose: (event: React.SyntheticEvent) => void
+  onClose: () => void
   onFocus: (path: Path) => void
   path: Path
   presence: FormFieldPresence[]
@@ -41,13 +41,11 @@ export function DefaultObjectEditing(props: DefaultObjectEditingProps) {
   ])
 
   return (
-    <DefaultDialog
-      isOpen
+    <Dialog
+      // @todo
+      id="todo"
       onClose={onClose}
-      onEscape={onClose}
-      showCloseButton
-      title={type.title}
-      size="medium"
+      header={type.title}
     >
       <PresenceOverlay margins={[0, 0, 1, 0]}>
         <FormBuilderInput
@@ -64,6 +62,6 @@ export function DefaultObjectEditing(props: DefaultObjectEditingProps) {
           value={object}
         />
       </PresenceOverlay>
-    </DefaultDialog>
+    </Dialog>
   )
 }
